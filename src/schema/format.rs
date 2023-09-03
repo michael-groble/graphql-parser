@@ -1,10 +1,9 @@
 use std::fmt;
 
-use crate::format::{Displayable, Formatter, Style, format_directives};
+use crate::format::{Displayable, Formatter, Style, format_directives, SortOrder};
 use crate::common::Text;
 
 use crate::schema::ast::*;
-
 
 impl<'a, T> Document<'a, T>
     where T: Text<'a>,
@@ -14,6 +13,21 @@ impl<'a, T> Document<'a, T>
         let mut formatter = Formatter::new(style);
         self.display(&mut formatter);
         formatter.into_string()
+    }
+
+    /// Sort the document so it prints in a stable order
+    pub fn sort_by(&mut self, sort_order: SortOrder) {
+        self.definitions.sort_by(move |a, b| {
+            let type_cmp = type_sort_value(a).cmp(&type_sort_value(b));
+            let name_cmp = is_directive_sort_value(a).cmp(&is_directive_sort_value(b)).then(
+                name_sort_value(a).cmp(&name_sort_value(b))).then(
+                directive_sort_value(a).cmp(&directive_sort_value(b))
+            );
+            match sort_order {
+                SortOrder::TypeAndName => type_cmp.then(name_cmp),
+                SortOrder::NameAndType => name_cmp.then(type_cmp)
+            }
+        })
     }
 }
 
@@ -479,3 +493,88 @@ impl_display!(
     InputObjectTypeExtension,
     DirectiveDefinition,
 );
+
+fn type_sort_value<'a, T>(definition: &Definition<'a, T>) -> u32
+    where T: Text<'a>
+{
+    match definition {
+        Definition::SchemaDefinition(_) => 0,
+        Definition::DirectiveDefinition(_) => 1,
+        Definition::TypeDefinition(t) => match t {
+            TypeDefinition::Enum(_) => 2,
+            TypeDefinition::InputObject(_) => 4,
+            TypeDefinition::Interface(_) => 6,
+            TypeDefinition::Scalar(_) => 8,
+            TypeDefinition::Object(_) => 10,
+            TypeDefinition::Union(_) => 12,
+        }
+        Definition::TypeExtension(e) => match e {
+            TypeExtension::Enum(_) => 3,
+            TypeExtension::InputObject(_) => 5,
+            TypeExtension::Interface(_) => 7,
+            TypeExtension::Scalar(_) => 9,
+            TypeExtension::Object(_) => 11,
+            TypeExtension::Union(_) => 13,
+        }
+    }
+}
+
+fn name_sort_value<'b, 'a, T>(definition: &'b Definition<'a, T>) -> Option<&'b T::Value>
+    where T: Text<'a>
+{
+    match definition {
+        Definition::SchemaDefinition(_) => None,
+        Definition::DirectiveDefinition(d) => Some(&d.name),
+        Definition::TypeDefinition(t) => match t {
+            TypeDefinition::Enum(d) => Some(&d.name),
+            TypeDefinition::InputObject(d) => Some(&d.name),
+            TypeDefinition::Interface(d) => Some(&d.name),
+            TypeDefinition::Scalar(d) => Some(&d.name),
+            TypeDefinition::Object(d) => Some(&d.name),
+            TypeDefinition::Union(d) => Some(&d.name),
+        }
+        Definition::TypeExtension(e) => match e {
+            TypeExtension::Enum(d) => Some(&d.name),
+            TypeExtension::InputObject(d) => Some(&d.name),
+            TypeExtension::Interface(d) => Some(&d.name),
+            TypeExtension::Scalar(d) => Some(&d.name),
+            TypeExtension::Object(d) => Some(&d.name),
+            TypeExtension::Union(d) => Some(&d.name),
+        }
+    }
+}
+
+fn directive_sort_value<'b, 'a, T>(definition: &'b Definition<'a, T>) -> Option<&'b T::Value>
+    where T: Text<'a>
+{
+    match definition {
+        Definition::SchemaDefinition(_) => None,
+        Definition::DirectiveDefinition(_) => None,
+        Definition::TypeDefinition(t) => match t {
+            TypeDefinition::Enum(d) => d.directives.first().map(|d| &d.name),
+            TypeDefinition::InputObject(d) => d.directives.first().map(|d| &d.name),
+            TypeDefinition::Interface(d) => d.directives.first().map(|d| &d.name),
+            TypeDefinition::Scalar(d) => d.directives.first().map(|d| &d.name),
+            TypeDefinition::Object(d) => d.directives.first().map(|d| &d.name),
+            TypeDefinition::Union(d) => d.directives.first().map(|d| &d.name),
+        }
+        Definition::TypeExtension(e) => match e {
+            TypeExtension::Enum(d) => d.directives.first().map(|d| &d.name),
+            TypeExtension::InputObject(d) => d.directives.first().map(|d| &d.name),
+            TypeExtension::Interface(d) => d.directives.first().map(|d| &d.name),
+            TypeExtension::Scalar(d) => d.directives.first().map(|d| &d.name),
+            TypeExtension::Object(d) => d.directives.first().map(|d| &d.name),
+            TypeExtension::Union(d) => d.directives.first().map(|d| &d.name),
+        }
+    }
+}
+
+fn is_directive_sort_value<'a, T>(definition: &Definition<'a, T>) -> u32
+    where T: Text<'a>
+{
+    match definition {
+        Definition::SchemaDefinition(_) => 0,
+        Definition::DirectiveDefinition(_) => 1,
+        _ => 2
+    }
+}

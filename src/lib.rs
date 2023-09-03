@@ -108,3 +108,4 @@ pub use crate::schema::parse_schema;
 pub use crate::query::minify_query;
 pub use crate::position::Pos;
 pub use crate::format::Style;
+pub use crate::format::SortOrder;

@@ -4,7 +4,7 @@ extern crate graphql_parser;
 use std::io::Read;
 use std::fs::File;
 
-use graphql_parser::parse_schema;
+use graphql_parser::{parse_schema, SortOrder};
 
 fn roundtrip(filename: &str) {
     let mut buf = String::with_capacity(1024);
@@ -23,6 +23,20 @@ fn roundtrip2(filename: &str) {
     f.read_to_string(&mut buf).unwrap();
     let ast = parse_schema::<String>(&buf).unwrap();
 
+    let mut buf = String::with_capacity(1024);
+    let mut f = File::open(&target).unwrap();
+    f.read_to_string(&mut buf).unwrap();
+    assert_eq!(ast.to_string(), buf);
+}
+
+fn roundtrip_sorted(filename: &str, sort_order: SortOrder, sort_file: &str) {
+    let mut buf = String::with_capacity(1024);
+    let source = format!("tests/schemas/{}.graphql", filename);
+    let target = format!("tests/schemas/{}_{}.graphql", filename, sort_file);
+    let mut f = File::open(&source).unwrap();
+    f.read_to_string(&mut buf).unwrap();
+    let mut ast = parse_schema::<String>(&buf).unwrap();
+    ast.sort_by(sort_order);
     let mut buf = String::with_capacity(1024);
     let mut f = File::open(&target).unwrap();
     f.read_to_string(&mut buf).unwrap();
@@ -49,6 +63,8 @@ fn roundtrip2(filename: &str) {
 #[test] fn extend_input() { roundtrip2("extend_input"); }
 #[test] fn directive() { roundtrip("directive"); }
 #[test] fn kitchen_sink() { roundtrip2("kitchen-sink"); }
+#[test] fn kitchen_sink_sorted_name_and_type() { roundtrip_sorted("kitchen-sink", SortOrder::NameAndType, "name-type"); }
+#[test] fn kitchen_sink_sorted_type_and_name() { roundtrip_sorted("kitchen-sink", SortOrder::TypeAndName, "type-name"); }
 #[test] fn directive_descriptions() { roundtrip2("directive_descriptions"); }
 #[test] fn directive_variable_definition() { roundtrip("directive_variable_definition"); }
 #[test] fn repeatable() {roundtrip("repeatable")}

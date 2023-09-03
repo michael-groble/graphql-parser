@@ -1,0 +1,106 @@
+schema {
+  query: QueryType
+  mutation: MutationType
+}
+
+directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+directive @include2(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+enum AnnotatedEnum @onEnum {
+  ANNOTATED_VALUE @onEnumValue
+  OTHER_VALUE
+}
+
+input AnnotatedInput @onInputObject {
+  annotatedField: Type @onField
+}
+
+interface AnnotatedInterface @onInterface {
+  annotatedField(arg: Type @onArg): Type @onField
+}
+
+type AnnotatedObject @onObject(arg: "value") {
+  annotatedField(arg: Type = "default" @onArg): Type @onField
+}
+
+scalar AnnotatedScalar @onScalar
+
+union AnnotatedUnion @onUnion = A | B
+
+union AnnotatedUnionTwo @onUnion = A | B
+
+interface Bar {
+  one: Type
+  four(argument: String = "string"): String
+}
+
+extend interface Bar {
+  two(argument: InputType!): Type
+}
+
+extend interface Bar @onInterface
+
+scalar CustomScalar
+
+extend scalar CustomScalar @onScalar
+
+union Feed = Story | Article | Advert
+
+extend union Feed = Photo | Video
+
+extend union Feed @onUnion
+
+"""
+  This is a description
+  of the `Foo` type.
+"""
+type Foo implements Bar & Baz {
+  one: Type
+  two(argument: InputType!): Type
+  three(argument: InputType, other: String): Int
+  four(argument: String = "string"): String
+  five(argument: [String] = ["string", "string"]): String
+  six(argument: InputType = {key: "value"}): Type
+  seven(argument: Int = null): Type
+}
+
+extend type Foo {
+  seven(argument: [String]): Type
+}
+
+extend type Foo @onType
+
+input InputType {
+  key: String!
+  answer: Int = 42
+}
+
+extend input InputType {
+  other: Float = 12300
+}
+
+extend input InputType @onInputObject
+
+enum Site {
+  DESKTOP
+  MOBILE
+}
+
+extend enum Site {
+  VR
+}
+
+extend enum Site @onEnum
+
+enum UndefinedEnum
+
+input UndefinedInput
+
+interface UndefinedInterface
+
+type UndefinedType
+
+union UndefinedUnion
